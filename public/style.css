@@ -40,3 +40,27 @@ body{
 .chessboard .black {
     background-color: #b58863;
 }
+
+.chessboard .possivel-movimento{
+    border: 5px dotted turquoise;
+}
+
+.chessboard .possivel-movimento:hover{
+    border: 5px dotted turquoise;
+}
+
+.chessboard .selecionado{
+    border: 5px solid turquoise;
+}
+
+.chessboard .nenhum-movimento{
+    border: 5px solid red;
+}
+
+.chessboard .nenhum-movimento:hover{
+    border: 5px solid red;
+}
+
+.chessboard .selecionado:hover{
+    border: 5px solid turquoise;
+}
