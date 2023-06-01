@@ -203,6 +203,16 @@ function verificarPeca(posicao) {
     pecaSelecionada.posicao = posicao;
     pecaSelecionada.movimentar = Bispo.movimento;
   }
+  else if (peca === '♛' || peca === '♕'){
+    pecaSelecionada.possiveisMovimentos = Rainha.possiveisMovimentos(posicao);
+    pecaSelecionada.posicao = posicao;
+    pecaSelecionada.movimentar = Rainha.movimento;
+  }
+  else if (peca === '♚' || peca === '♔'){
+    pecaSelecionada.possiveisMovimentos = Rei.possiveisMovimentos(posicao);
+    pecaSelecionada.posicao = posicao;
+    pecaSelecionada.movimentar = Rei.movimento;
+  }
   else if (peca === '') {
     limparPeca()
   }
@@ -211,6 +221,34 @@ function verificarPeca(posicao) {
 }
 
 class Peca {
+  static verificaCampo(linha,coluna,color){
+    let movimento = null;
+    let continuar = true;
+    if (tabuleiro[calcIndex(linha,coluna)] === ''){
+      movimento = [linha,coluna]
+    }
+    else if(color === 'preto'){
+      if (pecaBranca(tabuleiro[calcIndex(linha, coluna)])){
+        movimento = [linha,coluna];
+
+        continuar = false;
+      }
+      else{
+        continuar = false;
+      }
+    }else{
+      if (pecaBranca(tabuleiro[calcIndex(linha,coluna)])){
+        continuar = false;
+      }
+      else{
+        movimento = [linha, coluna];
+
+        continuar = false;
+      }
+    }
+    return {movimento, continuar};
+  }
+
   static movimento(posicao) {
     const [linhaAtual, colunaAtual] = pecaSelecionada.posicao;
     const [linha, coluna] = posicao;
@@ -276,41 +314,13 @@ class Peao extends Peca {
 }
 
 class Torre extends Peca {
-  static verificaCampos(linha,coluna,color){
-    let movimento = null;
-    let continuar = true;
-    if (tabuleiro[calcIndex(linha,coluna)] === ''){
-      movimento = [linha,coluna]
-    }
-    else if(color === 'preto'){
-      if (pecaBranca(tabuleiro[calcIndex(linha, coluna)])){
-        movimento = [linha,coluna];
-
-        continuar = false;
-      }
-      else{
-        continuar = false;
-      }
-    }else{
-      if (pecaBranca(tabuleiro[calcIndex(linha,coluna)])){
-        continuar = false;
-      }
-      else{
-        movimento = [linha, coluna];
-
-        continuar = false;
-      }
-    }
-    return {movimento, continuar};
-  }
-
   static possiveisMovimentos(posicao) {
     const [linha, coluna] = posicao;
     const movimentos = [];
     const color = pecaBranca(tabuleiro[calcIndex(linha,coluna)]) ? 'branco' : 'preto';
 
     for(let i = coluna + 1 ; i <= 8 ; i++){
-      const {continuar, movimento} = this.verificaCampos(linha,i,color);
+      const {continuar, movimento} = this.verificaCampo(linha,i,color);
 
       if (movimento){
         movimentos.push(movimento);
@@ -322,7 +332,7 @@ class Torre extends Peca {
     }
 
     for (let i = coluna - 1 ; i > 0 ; i--){
-      const {continuar, movimento} = this.verificaCampos(linha,i,color);
+      const {continuar, movimento} = this.verificaCampo(linha,i,color);
 
       if (movimento){
         movimentos.push(movimento);
@@ -334,7 +344,7 @@ class Torre extends Peca {
     }
 
     for(let i = linha + 1 ; i <= 8 ; i++){
-      const {continuar, movimento} = this.verificaCampos(i,coluna,color);
+      const {continuar, movimento} = this.verificaCampo(i,coluna,color);
 
       if (movimento){
         movimentos.push(movimento);
@@ -346,7 +356,7 @@ class Torre extends Peca {
     }
 
     for(let i = linha - 1 ; i > 0 ; i--){
-      const {continuar, movimento} = this.verificaCampos(i,coluna,color);
+      const {continuar, movimento} = this.verificaCampo(i,coluna,color);
 
       if (movimento){
         movimentos.push(movimento);
@@ -366,114 +376,87 @@ class Cavalo extends Peca {
     const [linha, coluna] = posicao;
     const movimentos = [];
     const color = pecaBranca(tabuleiro[calcIndex(linha,coluna)]) ? 'branco' : 'preto';
+    let linhaNova;
+    let colunaNova;
 
     if (linha + 2 <= 8){
+      linhaNova = linha + 2;
       if (coluna + 1 <= 8){
-        if (color === 'preto'){
-          if (pecaBranca(tabuleiro[calcIndex(linha + 2, coluna + 1)]) || tabuleiro[calcIndex(linha + 2, coluna + 1)] === ''){
-            movimentos.push([linha + 2, coluna + 1])
-          }
-        }
-        else{
-          if (pecaPreta(tabuleiro[calcIndex(linha + 2, coluna + 1)]) || tabuleiro[calcIndex(linha + 2, coluna + 1)] === ''){
-            movimentos.push([linha + 2, coluna + 1])
-          }
+        colunaNova = coluna + 1;
+        const {movimento} = this.verificaCampo(linhaNova, colunaNova, color)
+
+        if (movimento){
+          movimentos.push(movimento);
         }
       }
       if (coluna - 1 > 0){
-        if (color === 'preto'){
-          if (pecaBranca(tabuleiro[calcIndex(linha + 2, coluna - 1)]) || tabuleiro[calcIndex(linha + 2, coluna - 1)] === ''){
-            movimentos.push([linha + 2, coluna - 1])
-          }
-        }
-        else{
-          if (pecaPreta(tabuleiro[calcIndex(linha + 2, coluna - 1)]) || tabuleiro[calcIndex(linha + 2, coluna - 1)] === ''){
-            movimentos.push([linha + 2, coluna - 1])
-          }
+        colunaNova = coluna - 1;
+        const {movimento} = this.verificaCampo(linhaNova, colunaNova, color);
+
+        if (movimento){
+          movimentos.push(movimento);
         }
       }
     }
 
     if (linha - 2 > 0){
+      linhaNova = linha - 2;
       if (coluna + 1 <= 8){
-        if (color === 'preto'){
-          if (pecaBranca(tabuleiro[calcIndex(linha - 2, coluna + 1)]) || tabuleiro[calcIndex(linha - 2, coluna + 1)] === ''){
-            movimentos.push([linha - 2, coluna + 1])
-          }
+        colunaNova = coluna + 1;
+        const {movimento} = this.verificaCampo(linhaNova, colunaNova, color)
+
+        if (movimento){
+          movimentos.push(movimento);
         }
-        else{
-          if (pecaPreta(tabuleiro[calcIndex(linha - 2, coluna + 1)]) || tabuleiro[calcIndex(linha - 2, coluna + 1)] === ''){
-            movimentos.push([linha - 2, coluna + 1])
-          }
-        }
-        
       }
       if (coluna - 1 > 0){
-        if (color === 'preto'){
-          if (pecaBranca(tabuleiro[calcIndex(linha - 2, coluna - 1)]) || tabuleiro[calcIndex(linha - 2, coluna - 1)] === ''){
-            movimentos.push([linha - 2, coluna - 1])
-          }
-        }
-        else{
-          if (pecaPreta(tabuleiro[calcIndex(linha + 2, coluna - 1)]) || tabuleiro[calcIndex(linha - 2, coluna - 1)] === ''){
-            movimentos.push([linha - 2, coluna - 1])
-          }
+        colunaNova = coluna - 1;
+        const {movimento} = this.verificaCampo(linhaNova, colunaNova, color)
+
+        if (movimento){
+          movimentos.push(movimento);
         }
       }
     }
 
     if (linha - 1 > 0){
+      linhaNova = linha - 1;
       if (coluna + 2 <= 8){
-        if (color === 'preto'){
-          if (pecaBranca(tabuleiro[calcIndex(linha - 1, coluna + 2)]) || tabuleiro[calcIndex(linha - 1, coluna + 2)] === ''){
-            movimentos.push([linha - 1, coluna + 2])
-          }
-        }
-        else{
-          if (pecaPreta(tabuleiro[calcIndex(linha - 1, coluna + 2)]) || tabuleiro[calcIndex(linha - 1, coluna + 2)] === ''){
-            movimentos.push([linha - 1, coluna + 2])
-          }
+        colunaNova = coluna + 2;
+        const {movimento} = this.verificaCampo(linhaNova, colunaNova, color)
+
+        if (movimento){
+          movimentos.push(movimento);
         }
       }
 
       if(coluna - 2 > 0){
-        if (color === 'preto'){
-          if (pecaBranca(tabuleiro[calcIndex(linha - 1, coluna - 2)]) || tabuleiro[calcIndex(linha - 1, coluna - 2)] === ''){
-            movimentos.push([linha - 1, coluna - 2])
-          }
-        }
-        else{
-          if (pecaPreta(tabuleiro[calcIndex(linha - 1, coluna - 2)]) || tabuleiro[calcIndex(linha - 1, coluna - 2)] === ''){
-            movimentos.push([linha - 1, coluna - 2])
-          }
+        colunaNova = coluna - 2;
+        const {movimento} = this.verificaCampo(linhaNova, colunaNova, color)
+
+        if (movimento){
+          movimentos.push(movimento);
         }
       }
     }
 
     if (linha + 1 <= 8){
+      linhaNova = linha + 1;
       if (coluna + 2 <= 8){
-        if (color === 'preto'){
-          if (pecaBranca(tabuleiro[calcIndex(linha + 1, coluna + 2)]) || tabuleiro[calcIndex(linha + 1, coluna + 2)] === ''){
-            movimentos.push([linha + 1, coluna + 2])
-          }
-        }
-        else{
-          if (pecaPreta(tabuleiro[calcIndex(linha + 1, coluna + 2)]) || tabuleiro[calcIndex(linha + 1, coluna + 2)] === ''){
-            movimentos.push([linha + 1, coluna + 2])
-          }
+        colunaNova = coluna + 2;
+        const {movimento} = this.verificaCampo(linhaNova, colunaNova, color)
+
+        if (movimento){
+          movimentos.push(movimento);
         }
       }
 
       if(coluna - 2 > 0){
-        if (color === 'preto'){
-          if (pecaBranca(tabuleiro[calcIndex(linha + 1, coluna - 2)]) || tabuleiro[calcIndex(linha + 1, coluna - 2)] === ''){
-            movimentos.push([linha + 1, coluna - 2])
-          }
-        }
-        else{
-          if (pecaPreta(tabuleiro[calcIndex(linha + 1, coluna - 2)]) || tabuleiro[calcIndex(linha + 1, coluna - 2)] === ''){
-            movimentos.push([linha + 1, coluna - 2])
-          }
+        colunaNova = coluna - 2;
+        const {movimento} = this.verificaCampo(linhaNova, colunaNova, color)
+
+        if (movimento){
+          movimentos.push(movimento);
         }
       }
     }
@@ -483,35 +466,6 @@ class Cavalo extends Peca {
 }
 
 class Bispo extends Peca {
-  static verificaCampo(linha,coluna,color){
-    let movimento = null;
-    let continuar = true;
-    if (tabuleiro[calcIndex(linha,coluna)] === ''){
-      movimento = [linha,coluna]
-    }
-    else if(color === 'preto'){
-      if (pecaBranca(tabuleiro[calcIndex(linha, coluna)])){
-        movimento = [linha,coluna];
-
-        continuar = false;
-      }
-      else{
-        continuar = false;
-      }
-    }else{
-      if (pecaBranca(tabuleiro[calcIndex(linha,coluna)])){
-        continuar = false;
-      }
-      else{
-        movimento = [linha, coluna];
-
-        continuar = false;
-      }
-    }
-    return {movimento, continuar};
-  }
-
-
   static possiveisMovimentos(posicao) {
     const [linha, coluna] = posicao;
     const movimentos = [];
@@ -519,7 +473,7 @@ class Bispo extends Peca {
 
     for(let i = linha + 1, j = coluna + 1 ; i <= 8 && j <=8 ; i++, j++){
       const {continuar, movimento} = this.verificaCampo(i,j,color);
-      
+
       if (movimento){
         movimentos.push(movimento);
       }
@@ -569,16 +523,16 @@ class Bispo extends Peca {
   }
 }
 
-class Rainha {
-  movimento() {}
-
-  possiveisMovimentos() {}
+class Rainha extends Peca{
+  static possiveisMovimentos(posicao) {
+    
+  }
 }
 
-class Rei {
-  movimento() {}
+class Rei extends Peca{
+  static possiveisMovimentos(posicao) {
 
-  possiveisMovimentos() {}
+  }
 }
 
 function checarMovimento(posicao) {
