@@ -198,6 +198,11 @@ function verificarPeca(posicao) {
     pecaSelecionada.posicao = posicao;
     pecaSelecionada.movimentar = Cavalo.movimento;
   }
+  else if (peca === '♝' || peca === '♗'){
+    pecaSelecionada.possiveisMovimentos = Bispo.possiveisMovimentos(posicao);
+    pecaSelecionada.posicao = posicao;
+    pecaSelecionada.movimentar = Bispo.movimento;
+  }
   else if (peca === '') {
     limparPeca()
   }
@@ -477,10 +482,91 @@ class Cavalo extends Peca {
   }
 }
 
-class Bispo {
-  movimento() {}
+class Bispo extends Peca {
+  static verificaCampo(linha,coluna,color){
+    let movimento = null;
+    let continuar = true;
+    if (tabuleiro[calcIndex(linha,coluna)] === ''){
+      movimento = [linha,coluna]
+    }
+    else if(color === 'preto'){
+      if (pecaBranca(tabuleiro[calcIndex(linha, coluna)])){
+        movimento = [linha,coluna];
 
-  possiveisMovimentos() {}
+        continuar = false;
+      }
+      else{
+        continuar = false;
+      }
+    }else{
+      if (pecaBranca(tabuleiro[calcIndex(linha,coluna)])){
+        continuar = false;
+      }
+      else{
+        movimento = [linha, coluna];
+
+        continuar = false;
+      }
+    }
+    return {movimento, continuar};
+  }
+
+
+  static possiveisMovimentos(posicao) {
+    const [linha, coluna] = posicao;
+    const movimentos = [];
+    const color = pecaBranca(tabuleiro[calcIndex(linha,coluna)]) ? 'branco' : 'preto';
+
+    for(let i = linha + 1, j = coluna + 1 ; i <= 8 && j <=8 ; i++, j++){
+      const {continuar, movimento} = this.verificaCampo(i,j,color);
+      
+      if (movimento){
+        movimentos.push(movimento);
+      }
+
+      if (!continuar){
+        break;
+      }
+    }
+
+    for (let i = linha + 1, j = coluna - 1 ; i <= 8 && j > 0 ; i++, j--){
+      const {continuar, movimento} = this.verificaCampo(i,j,color);
+
+      if (movimento){
+        movimentos.push(movimento);
+      }
+
+      if (!continuar){
+        break;
+      }
+    }
+
+    for(let i = linha - 1, j = coluna + 1 ; i > 0 && j <= 8 ; i--, j++){
+      const {continuar, movimento} = this.verificaCampo(i,j,color);
+
+      if (movimento){
+        movimentos.push(movimento);
+      }
+
+      if (!continuar){
+        break;
+      }
+    }
+
+    for(let i = linha - 1, j = coluna - 1 ; i > 0 && j > 0 ; i--, j--){
+      const {continuar, movimento} = this.verificaCampo(i,j,color);
+
+      if (movimento){
+        movimentos.push(movimento);
+      }
+
+      if (!continuar){
+        break;
+      }
+    }
+
+    return movimentos;
+  }
 }
 
 class Rainha {
