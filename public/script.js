@@ -45,11 +45,11 @@ function marcarCasasDePossiveisMovimentos(posicao, movimentos) {
     movimentos.forEach(movimento => {
       const id = movimento.toString().replace(',', '-');
 
+      console.log(id)
       document.getElementById(id).classList.add('possivel-movimento');
     });
 
     const id = posicao.toString().replace(',', '-');
-
     document.getElementById(id).classList.add('selecionado');
   }
 }

@@ -187,13 +187,17 @@ function verificarPeca(posicao) {
     pecaSelecionada.possiveisMovimentos = Peao.possiveisMovimentos(posicao);
     pecaSelecionada.posicao = posicao;
     pecaSelecionada.movimentar = Peao.movimento;
-
-    return pecaSelecionada.possiveisMovimentos;
-  } else if (peca === '') {
-    pecaSelecionada.movimentar = posicao => {};
-    pecaSelecionada.posicao = [];
-    pecaSelecionada.possiveisMovimentos = [];
   }
+  else if(peca === '♜' || peca === '♖'){
+    pecaSelecionada.possiveisMovimentos = Torre.possiveisMovimentos(posicao);
+    pecaSelecionada.posicao = posicao;
+    pecaSelecionada.movimentar = Torre.movimento;
+  } 
+  else if (peca === '') {
+    limparPeca()
+  }
+
+  return pecaSelecionada.possiveisMovimentos;
 }
 
 class Peca {
@@ -261,15 +265,93 @@ class Peao extends Peca {
   }
 }
 
-class Torre {
-  movimento() {}
+class Torre extends Peca {
+  static verificaCampos(linha,coluna,color){
+    let movimento = null;
+    let continuar = true;
+    if (tabuleiro[calcIndex(linha,coluna)] === ''){
+      movimento = [linha,coluna]
+    }
+    else if(color === 'preto'){
+      if (pecaBranca(tabuleiro[calcIndex(linha, coluna)])){
+        movimento = [linha,coluna];
 
-  possiveisMovimentos() {}
+        continuar = false;
+      }
+      else{
+        continuar = false;
+      }
+    }else{
+      if (pecaBranca(tabuleiro[calcIndex(linha,coluna)])){
+        continuar = false;
+      }
+      else{
+        movimento = [linha, coluna];
+
+        continuar = false;
+      }
+    }
+    return {movimento, continuar};
+  }
+
+  static possiveisMovimentos(posicao) {
+    const [linha, coluna] = posicao;
+    const movimentos = [];
+    const color = pecaBranca(tabuleiro[calcIndex(linha,coluna)]) ? 'branco' : 'preto';
+
+    for(let i = coluna + 1 ; i <= 8 ; i++){
+      const {continuar, movimento} = this.verificaCampos(linha,i,color);
+
+      if (movimento){
+        movimentos.push(movimento);
+      }
+
+      if (!continuar){
+        break;
+      }
+    }
+
+    for (let i = coluna - 1 ; i > 0 ; i--){
+      const {continuar, movimento} = this.verificaCampos(linha,i,color);
+
+      if (movimento){
+        movimentos.push(movimento);
+      }
+
+      if (!continuar){
+        break;
+      }
+    }
+
+    for(let i = linha + 1 ; i <= 8 ; i++){
+      const {continuar, movimento} = this.verificaCampos(i,coluna,color);
+
+      if (movimento){
+        movimentos.push(movimento);
+      }
+
+      if (!continuar){
+        break;
+      }
+    }
+
+    for(let i = linha - 1 ; i > 0 ; i--){
+      const {continuar, movimento} = this.verificaCampos(i,coluna,color);
+
+      if (movimento){
+        movimentos.push(movimento);
+      }
+
+      if (!continuar){
+        break;
+      }
+    }
+
+    return movimentos
+  }
 }
 
 class Cavalo {
-  movimento() {}
-
   possiveisMovimentos() {}
 }
 
@@ -300,9 +382,13 @@ function checarMovimento(posicao) {
     }
   }
 
-  console.log('false');
-
   return false;
+}
+
+function limparPeca(){
+  pecaSelecionada.movimentar = posicao => {};
+  pecaSelecionada.posicao = [];
+  pecaSelecionada.possiveisMovimentos = [];
 }
 
 io.on('connection', socket => {
@@ -316,11 +402,13 @@ io.on('connection', socket => {
     } else {
       if (checarMovimento(posicao)) {
         pecaSelecionada.movimentar(posicao);
-        pecaSelecionada.movimentar = posicao => {};
-        pecaSelecionada.posicao = [];
-        pecaSelecionada.possiveisMovimentos = [];
+
+        limparPeca()
+
         socket.emit('movimentou', tabuleiro);
       } else {
+        limparPeca()
+
         const movimentos = verificarPeca(posicao);
 
         socket.emit('possiveis-movimentos', { movimentos, tabuleiro, posicao });
