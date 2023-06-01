@@ -193,6 +193,11 @@ function verificarPeca(posicao) {
     pecaSelecionada.posicao = posicao;
     pecaSelecionada.movimentar = Torre.movimento;
   } 
+  else if (peca === '♞' || peca === '♘'){
+    pecaSelecionada.possiveisMovimentos = Cavalo.possiveisMovimentos(posicao);
+    pecaSelecionada.posicao = posicao;
+    pecaSelecionada.movimentar = Cavalo.movimento;
+  }
   else if (peca === '') {
     limparPeca()
   }
@@ -351,8 +356,125 @@ class Torre extends Peca {
   }
 }
 
-class Cavalo {
-  possiveisMovimentos() {}
+class Cavalo extends Peca {
+  static possiveisMovimentos(posicao) {
+    const [linha, coluna] = posicao;
+    const movimentos = [];
+    const color = pecaBranca(tabuleiro[calcIndex(linha,coluna)]) ? 'branco' : 'preto';
+
+    if (linha + 2 <= 8){
+      if (coluna + 1 <= 8){
+        if (color === 'preto'){
+          if (pecaBranca(tabuleiro[calcIndex(linha + 2, coluna + 1)]) || tabuleiro[calcIndex(linha + 2, coluna + 1)] === ''){
+            movimentos.push([linha + 2, coluna + 1])
+          }
+        }
+        else{
+          if (pecaPreta(tabuleiro[calcIndex(linha + 2, coluna + 1)]) || tabuleiro[calcIndex(linha + 2, coluna + 1)] === ''){
+            movimentos.push([linha + 2, coluna + 1])
+          }
+        }
+      }
+      if (coluna - 1 > 0){
+        if (color === 'preto'){
+          if (pecaBranca(tabuleiro[calcIndex(linha + 2, coluna - 1)]) || tabuleiro[calcIndex(linha + 2, coluna - 1)] === ''){
+            movimentos.push([linha + 2, coluna - 1])
+          }
+        }
+        else{
+          if (pecaPreta(tabuleiro[calcIndex(linha + 2, coluna - 1)]) || tabuleiro[calcIndex(linha + 2, coluna - 1)] === ''){
+            movimentos.push([linha + 2, coluna - 1])
+          }
+        }
+      }
+    }
+
+    if (linha - 2 > 0){
+      if (coluna + 1 <= 8){
+        if (color === 'preto'){
+          if (pecaBranca(tabuleiro[calcIndex(linha - 2, coluna + 1)]) || tabuleiro[calcIndex(linha - 2, coluna + 1)] === ''){
+            movimentos.push([linha - 2, coluna + 1])
+          }
+        }
+        else{
+          if (pecaPreta(tabuleiro[calcIndex(linha - 2, coluna + 1)]) || tabuleiro[calcIndex(linha - 2, coluna + 1)] === ''){
+            movimentos.push([linha - 2, coluna + 1])
+          }
+        }
+        
+      }
+      if (coluna - 1 > 0){
+        if (color === 'preto'){
+          if (pecaBranca(tabuleiro[calcIndex(linha - 2, coluna - 1)]) || tabuleiro[calcIndex(linha - 2, coluna - 1)] === ''){
+            movimentos.push([linha - 2, coluna - 1])
+          }
+        }
+        else{
+          if (pecaPreta(tabuleiro[calcIndex(linha + 2, coluna - 1)]) || tabuleiro[calcIndex(linha - 2, coluna - 1)] === ''){
+            movimentos.push([linha - 2, coluna - 1])
+          }
+        }
+      }
+    }
+
+    if (linha - 1 > 0){
+      if (coluna + 2 <= 8){
+        if (color === 'preto'){
+          if (pecaBranca(tabuleiro[calcIndex(linha - 1, coluna + 2)]) || tabuleiro[calcIndex(linha - 1, coluna + 2)] === ''){
+            movimentos.push([linha - 1, coluna + 2])
+          }
+        }
+        else{
+          if (pecaPreta(tabuleiro[calcIndex(linha - 1, coluna + 2)]) || tabuleiro[calcIndex(linha - 1, coluna + 2)] === ''){
+            movimentos.push([linha - 1, coluna + 2])
+          }
+        }
+      }
+
+      if(coluna - 2 > 0){
+        if (color === 'preto'){
+          if (pecaBranca(tabuleiro[calcIndex(linha - 1, coluna - 2)]) || tabuleiro[calcIndex(linha - 1, coluna - 2)] === ''){
+            movimentos.push([linha - 1, coluna - 2])
+          }
+        }
+        else{
+          if (pecaPreta(tabuleiro[calcIndex(linha - 1, coluna - 2)]) || tabuleiro[calcIndex(linha - 1, coluna - 2)] === ''){
+            movimentos.push([linha - 1, coluna - 2])
+          }
+        }
+      }
+    }
+
+    if (linha + 1 <= 8){
+      if (coluna + 2 <= 8){
+        if (color === 'preto'){
+          if (pecaBranca(tabuleiro[calcIndex(linha + 1, coluna + 2)]) || tabuleiro[calcIndex(linha + 1, coluna + 2)] === ''){
+            movimentos.push([linha + 1, coluna + 2])
+          }
+        }
+        else{
+          if (pecaPreta(tabuleiro[calcIndex(linha + 1, coluna + 2)]) || tabuleiro[calcIndex(linha + 1, coluna + 2)] === ''){
+            movimentos.push([linha + 1, coluna + 2])
+          }
+        }
+      }
+
+      if(coluna - 2 > 0){
+        if (color === 'preto'){
+          if (pecaBranca(tabuleiro[calcIndex(linha + 1, coluna - 2)]) || tabuleiro[calcIndex(linha + 1, coluna - 2)] === ''){
+            movimentos.push([linha + 1, coluna - 2])
+          }
+        }
+        else{
+          if (pecaPreta(tabuleiro[calcIndex(linha + 1, coluna - 2)]) || tabuleiro[calcIndex(linha + 1, coluna - 2)] === ''){
+            movimentos.push([linha + 1, coluna - 2])
+          }
+        }
+      }
+    }
+
+    return movimentos;
+  }
 }
 
 class Bispo {
