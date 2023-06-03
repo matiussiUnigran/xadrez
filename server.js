@@ -16,6 +16,22 @@ const pecasPretas = ['♜', '♞', '♝', '♛', '♚', '♟'];
 
 const pecasBrancas = ['♙', '♖', '♘', '♗', '♕', '♔'];
 
+function cavalo(peca){
+  return ['♞','♘'].includes(peca)
+}
+
+function bispo(peca){
+  return ['♝','♗'].includes(peca)
+}
+
+function rainha(peca){
+  return ['♛','♕'].includes(peca)
+}
+
+function torre(peca){
+  return ['♜','♖'].includes(peca)
+}
+
 let tabuleiro = [
   '♜',
   '♞',
@@ -161,23 +177,11 @@ function reset() {
 }
 
 function pecaBranca(peca) {
-  for (let i = 0; i < pecasBrancas.length; i++) {
-    if (pecasBrancas[i] === peca) {
-      return true;
-    }
-  }
-
-  return false;
+  return pecasBrancas.includes(peca)
 }
 
 function pecaPreta(peca) {
-  for (let i = 0; i < pecasPretas.length; i++) {
-    if (pecasPretas[i] === peca) {
-      return true;
-    }
-  }
-
-  return false;
+  return pecasPretas.includes(peca)
 }
 
 function verificarPeca(posicao) {
@@ -214,7 +218,132 @@ function verificarPeca(posicao) {
   return pecaSelecionada.possiveisMovimentos;
 }
 
+function calcPosition(index){
+  const linha =  8 - Math.floor(index / 8);
+  const coluna = index % 8 + 1;
+
+  return [linha,coluna]
+}
+
+function encontraRei(tabuleiro,color){
+  let posicao = []
+  tabuleiro.forEach((peca, index) => {
+    if (color === 'branco'){
+      if (peca === '♔'){
+        posicao = calcPosition(index);
+      }
+    }
+    else{
+      if (peca === '♚'){
+        posicao = calcPosition(index);
+      }
+    }
+  });
+
+  return posicao;
+}
+
+function peao(posicao,color){
+  const [linha, coluna] = posicao;
+  const direcao = color === 'branco' ? 1 : -1;
+
+  const novaLinha = linha + direcao;
+  const direita = coluna + 1;
+  const esquerda = coluna - 1;
+    
+  if(Peca.verificaPecaCapturavel(novaLinha,direita,color)){
+    if (['♙','♟'].includes(tabuleiro[calcIndex(novaLinha,direita)])){
+      return true;
+    }
+  }
+  else if(Peca.verificaPecaCapturavel(novaLinha,esquerda,color)){
+    if (['♙','♟'].includes(tabuleiro[calcIndex(novaLinha,esquerda)])){
+      return true;
+    }
+  }
+
+  return false;
+}
+
 class Peca {
+
+  static verificaDirecao(direcoes,posicao,color,pecaInimiga){
+    const [linha,coluna] = posicao
+    for (const direcao of direcoes) {
+      for (let i = 1; i <= 8; i++) {
+        const novaLinha = linha + direcao.linha * i;
+        const novaColuna = coluna + direcao.coluna * i;
+        
+        const peca = tabuleiro[calcIndex(novaLinha,novaColuna)]
+
+        if (
+          novaLinha < 1 ||
+          novaLinha > 8 ||
+          novaColuna < 1 ||
+          novaColuna > 8
+        ) {
+          break;
+        }
+
+        const { continuar, movimento } = this.verificaCampo(
+          novaLinha,
+          novaColuna,
+          color
+        );
+        if (!continuar, movimento) {
+          if (pecaInimiga(peca)){
+            return true;
+          }
+          break;
+        }
+      }
+    }
+  }
+  static verificaXeque(tabuleiro, color){
+    const [linha,coluna] = encontraRei(tabuleiro, color);
+    const direcoes = {
+      linha: [
+        { linha: 0, coluna: 1 }, // direita
+        { linha: 0, coluna: -1 }, // esquerda
+        { linha: 1, coluna: 0 }, // para cima
+        { linha: -1, coluna: 0 } // para baixo
+      ],
+
+      diagonal: [
+        { linha: 1, coluna: 1 }, // diagonal superior direita
+        { linha: 1, coluna: -1 }, // diagonal superior esquerda
+        { linha: -1, coluna: 1 }, // diagonal inferior direita
+        { linha: -1, coluna: -1 } // diagonal inferior esquerda
+      ],
+
+      cavalo: [
+        { linha: 2, coluna: 1 },
+        { linha: 2, coluna: -1 },
+        { linha: -2, coluna: 1 },
+        { linha: -2, coluna: -1 },
+        { linha: 1, coluna: 2 },
+        { linha: 1, coluna: -2 },
+        { linha: -1, coluna: 2 },
+        { linha: -1, coluna: -2 }
+      ]
+    };
+
+    if (peao([linha,coluna], color)){
+      return true
+    }
+    else if (this.verificaDirecao(direcoes.linha, [linha,coluna], color, (peca)=> rainha(peca)||torre(peca))){
+      return true;
+    }
+    else if (this.verificaDirecao(direcoes.diagonal, [linha,coluna], color, (peca)=> rainha(peca) || bispo(peca))){
+      return true
+    }
+    else if (this.verificaDirecao(direcoes.cavalo, [linha,coluna], color, (peca) => cavalo(peca))){
+      return true;
+    }
+
+    return false;
+  }
+
   static verificaCampoVazio(linha, coluna) {
     const peca = tabuleiro[calcIndex(linha, coluna)];
     return peca === '';
@@ -542,6 +671,13 @@ io.on('connection', socket => {
   reset();
 
   socket.on('movimento', posicao => {
+    if (Peca.verificaXeque(tabuleiro, 'preto')){
+      console.log('xeque preto')
+    }
+    if (Peca.verificaXeque(tabuleiro, 'branco')){
+      console.log('xeque branco')
+
+    }
     if (pecaSelecionada.possiveisMovimentos.length === 0) {
       const movimentos = verificarPeca(posicao);
 
