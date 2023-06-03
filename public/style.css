@@ -1,18 +1,20 @@
-*{
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-body{
+body {
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-direction: column;
     width: 100vw;
     height: 100vh;
 }
 
 .chessboard {
+    margin-top: 50px;
     width: 400px;
     height: 400px;
     display: flex;
@@ -29,7 +31,7 @@ body{
     cursor: pointer;
 }
 
-.chessboard div:hover{
+.chessboard div:hover {
     border: 1px solid black;
 }
 
@@ -41,26 +43,26 @@ body{
     background-color: #b58863;
 }
 
-.chessboard .possivel-movimento{
+.chessboard .possivel-movimento {
     border: 5px dotted turquoise;
 }
 
-.chessboard .possivel-movimento:hover{
+.chessboard .possivel-movimento:hover {
     border: 5px dotted turquoise;
 }
 
-.chessboard .selecionado{
+.chessboard .selecionado {
     border: 5px solid turquoise;
 }
 
-.chessboard .nenhum-movimento{
+.chessboard .nenhum-movimento {
     border: 5px solid red;
 }
 
-.chessboard .nenhum-movimento:hover{
+.chessboard .nenhum-movimento:hover {
     border: 5px solid red;
 }
 
-.chessboard .selecionado:hover{
+.chessboard .selecionado:hover {
     border: 5px solid turquoise;
 }

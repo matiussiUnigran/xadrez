@@ -6,98 +6,107 @@ const server = http.createServer(app);
 const { Server } = require('socket.io');
 const io = new Server(server);
 
-const pecaSelecionada = {
-  posicao: [],
-  possiveisMovimentos: [],
-  movimentar: posicao => {}
-};
+const jogadoresAguardando = [];
 
-const pecasPretas = ['♜', '♞', '♝', '♛', '♚', '♟'];
-
-const pecasBrancas = ['♙', '♖', '♘', '♗', '♕', '♔'];
-
-function cavalo(peca){
-  return ['♞','♘'].includes(peca)
+class Jogador {
+  constructor(id = '') {
+    this.id = id;
+    this.xeque = false;
+    this.roqueCurto = true;
+    this.roqueGrande = true;
+  }
 }
 
-function bispo(peca){
-  return ['♝','♗'].includes(peca)
+class Jogo {
+  constructor(jogador1, jogador2) {
+    this.jogadorDeBrancas = new Jogador(jogador1);
+    this.jogadorDePretas = new Jogador(jogador2);
+    this.turno = 'branco';
+    this.tabuleiro = this.resetTabuleiro();
+    this.pecaSelecionada = new PecaSelecionada()
+  }
+
+  resetTabuleiro() {
+    return [
+      '♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜',
+      '♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟',
+      '', '', '', '', '', '', '', '',
+      '', '', '', '', '', '', '', '',
+      '', '', '', '', '', '', '', '',
+      '', '', '', '', '', '', '', '',
+      '♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙',
+      '♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖'
+    ];
+  }
+
+  movimentarPeca(posicaoAtual, posicaoNova) {
+    const peca = this.tabuleiro[calcIndex(posicaoAtual[0], posicaoAtual[1])];
+    const jogador = this.turno === 'branco' ? this.jogadorDeBrancas : this.jogadorDePretas;
+
+    // Se a peça é um rei, o jogador não pode mais fazer roque
+    if (peca === '♔' || peca === '♚') {
+      jogador.roqueCurto = false;
+      jogador.roqueGrande = false;
+    }
+
+    // Se a peça é uma torre, o jogador não pode mais fazer o roque do lado correspondente
+    if (peca === '♖' || peca === '♜') {
+      if (posicaoAtual[1] === 1) { // Torre do lado do roque grande
+        jogador.roqueGrande = false;
+      } else if (posicaoAtual[1] === 8) { // Torre do lado do roque curto
+        jogador.roqueCurto = false;
+      }
+    }
+
+    // Mover a peça no tabuleiro
+    this.tabuleiro[calcIndex(posicaoAtual[0], posicaoAtual[1])] = '';
+    this.tabuleiro[calcIndex(posicaoNova[0], posicaoNova[1])] = peca;
+
+    // Se o movimento é um roque, mover a torre também
+    /*     if (Math.abs(posicaoAtual[1] - posicaoNova[1]) === 2) {
+          const direcao = posicaoNova[1] > posicaoAtual[1] ? 1 : -1;
+          const colunaTorreOrigem = direcao === 1 ? 8 : 1;
+          const colunaTorreDestino = posicaoAtual[1] + direcao;
+    
+          const pecaTorre = this.tabuleiro[calcIndex(posicaoAtual[0], colunaTorreOrigem)];
+          this.tabuleiro[calcIndex(posicaoAtual[0], colunaTorreOrigem)] = '';
+          this.tabuleiro[calcIndex(posicaoAtual[0], colunaTorreDestino)] = pecaTorre;
+        } */
+
+    // Trocar o turno
+    this.turno = this.turno === 'branco' ? 'preto' : 'branco';
+  }
+
+
 }
 
-function rainha(peca){
-  return ['♛','♕'].includes(peca)
+class PecaSelecionada {
+  constructor() {
+    this.posicao = [];
+    this.possiveisMovimentos = [];
+  }
+
+  movimentar(posicao) { }
 }
 
-function torre(peca){
-  return ['♜','♖'].includes(peca)
+const jogos = []
+
+
+function cavalo(peca) {
+  return ['♞', '♘'].includes(peca)
 }
 
-let tabuleiro = [
-  '♜',
-  '♞',
-  '♝',
-  '♛',
-  '♚',
-  '♝',
-  '♞',
-  '♜',
-  '♟',
-  '♟',
-  '♟',
-  '♟',
-  '♟',
-  '♟',
-  '♟',
-  '♟',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '',
-  '♙',
-  '♙',
-  '♙',
-  '♙',
-  '♙',
-  '♙',
-  '♙',
-  '♙',
-  '♖',
-  '♘',
-  '♗',
-  '♕',
-  '♔',
-  '♗',
-  '♘',
-  '♖'
-];
+function bispo(peca) {
+  return ['♝', '♗'].includes(peca)
+}
+
+function rainha(peca) {
+  return ['♛', '♕'].includes(peca)
+}
+
+function torre(peca) {
+  return ['♜', '♖'].includes(peca)
+}
 
 function calcIndex(l, c) {
   const linha = 8 - l;
@@ -105,136 +114,31 @@ function calcIndex(l, c) {
   return linha * 8 + coluna - 1;
 }
 
-function reset() {
-  const tabuleiroInicial = [
-    '♜',
-    '♞',
-    '♝',
-    '♛',
-    '♚',
-    '♝',
-    '♞',
-    '♜',
-    '♟',
-    '♟',
-    '♟',
-    '♟',
-    '♟',
-    '♟',
-    '♟',
-    '♟',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '♙',
-    '♙',
-    '♙',
-    '♙',
-    '♙',
-    '♙',
-    '♙',
-    '♙',
-    '♖',
-    '♘',
-    '♗',
-    '♕',
-    '♔',
-    '♗',
-    '♘',
-    '♖'
-  ];
-
-  tabuleiro = tabuleiroInicial;
-}
-
 function pecaBranca(peca) {
-  return pecasBrancas.includes(peca)
+  return ['♙', '♖', '♘', '♗', '♕', '♔'].includes(peca)
 }
 
 function pecaPreta(peca) {
-  return pecasPretas.includes(peca)
+  return ['♜', '♞', '♝', '♛', '♚', '♟'].includes(peca)
 }
 
-function verificarPeca(posicao) {
-  const peca = tabuleiro[calcIndex(posicao[0], posicao[1])];
-
-  if (peca === '♙' || peca === '♟') {
-    pecaSelecionada.possiveisMovimentos = Peao.possiveisMovimentos(posicao);
-    pecaSelecionada.posicao = posicao;
-    pecaSelecionada.movimentar = Peao.movimento;
-  } else if (peca === '♜' || peca === '♖') {
-    pecaSelecionada.possiveisMovimentos = Torre.possiveisMovimentos(posicao);
-    pecaSelecionada.posicao = posicao;
-    pecaSelecionada.movimentar = Torre.movimento;
-  } else if (peca === '♞' || peca === '♘') {
-    pecaSelecionada.possiveisMovimentos = Cavalo.possiveisMovimentos(posicao);
-    pecaSelecionada.posicao = posicao;
-    pecaSelecionada.movimentar = Cavalo.movimento;
-  } else if (peca === '♝' || peca === '♗') {
-    pecaSelecionada.possiveisMovimentos = Bispo.possiveisMovimentos(posicao);
-    pecaSelecionada.posicao = posicao;
-    pecaSelecionada.movimentar = Bispo.movimento;
-  } else if (peca === '♛' || peca === '♕') {
-    pecaSelecionada.possiveisMovimentos = Rainha.possiveisMovimentos(posicao);
-    pecaSelecionada.posicao = posicao;
-    pecaSelecionada.movimentar = Rainha.movimento;
-  } else if (peca === '♚' || peca === '♔') {
-    pecaSelecionada.possiveisMovimentos = Rei.possiveisMovimentos(posicao);
-    pecaSelecionada.posicao = posicao;
-    pecaSelecionada.movimentar = Rei.movimento;
-  } else if (peca === '') {
-    limparPeca();
-  }
-
-  return pecaSelecionada.possiveisMovimentos;
-}
-
-function calcPosition(index){
-  const linha =  8 - Math.floor(index / 8);
+function calcPosition(index) {
+  const linha = 8 - Math.floor(index / 8);
   const coluna = index % 8 + 1;
 
-  return [linha,coluna]
+  return [linha, coluna]
 }
 
-function encontraRei(tabuleiro,color){
+function encontraRei(tabuleiro, color) {
   let posicao = []
   tabuleiro.forEach((peca, index) => {
-    if (color === 'branco'){
-      if (peca === '♔'){
+    if (color === 'branco') {
+      if (peca === '♔') {
         posicao = calcPosition(index);
       }
     }
-    else{
-      if (peca === '♚'){
+    else {
+      if (peca === '♚') {
         posicao = calcPosition(index);
       }
     }
@@ -243,22 +147,23 @@ function encontraRei(tabuleiro,color){
   return posicao;
 }
 
-function peao(posicao,color){
+function peao(posicao, color, tabuleiro) {
   const [linha, coluna] = posicao;
   const direcao = color === 'branco' ? 1 : -1;
 
   const novaLinha = linha + direcao;
-  const direita = coluna + 1;
-  const esquerda = coluna - 1;
-    
-  if(Peca.verificaPecaCapturavel(novaLinha,direita,color)){
-    if (['♙','♟'].includes(tabuleiro[calcIndex(novaLinha,direita)])){
-      return true;
-    }
-  }
-  else if(Peca.verificaPecaCapturavel(novaLinha,esquerda,color)){
-    if (['♙','♟'].includes(tabuleiro[calcIndex(novaLinha,esquerda)])){
-      return true;
+  const posicoesParaVerificar = [coluna + 1, coluna - 1]; // positions to check
+
+  // List of pieces that can be captured
+  const peoes = ['♙', '♟'];
+
+  // Check each position for a capturable piece
+  for (let posicaoAtual of posicoesParaVerificar) {
+    if (Peca.verificaPecaCapturavel([novaLinha, posicaoAtual], color, tabuleiro)) {
+      const peca = tabuleiro[calcIndex(novaLinha, posicaoAtual)];
+      if (peoes.includes(peca)) {
+        return true;
+      }
     }
   }
 
@@ -267,14 +172,32 @@ function peao(posicao,color){
 
 class Peca {
 
-  static verificaDirecao(direcoes,posicao,color,pecaInimiga){
-    const [linha,coluna] = posicao
+  static verificaXequeMate(tabuleiro, color, jogador) {
+    const minhaPeca = color === 'branco' ? pecaBranca : pecaPreta;
+    let xequeMate = true;
+    tabuleiro.map((peca, index) => {
+      if (minhaPeca(peca)) {
+        const posicao = calcPosition(index);
+
+        const { possiveisMovimentos } = verificarPeca(posicao, tabuleiro, jogador);
+        if (possiveisMovimentos.length !== 0) {
+          xequeMate = false;
+          return null;
+        }
+      }
+    })
+
+    return xequeMate;
+  }
+
+  static verificaDirecao(direcoes, posicao, color, pecaInimiga, tabuleiro) {
+    const [linha, coluna] = posicao;
     for (const direcao of direcoes) {
       for (let i = 1; i <= 8; i++) {
         const novaLinha = linha + direcao.linha * i;
         const novaColuna = coluna + direcao.coluna * i;
-        
-        const peca = tabuleiro[calcIndex(novaLinha,novaColuna)]
+
+        const peca = tabuleiro[calcIndex(novaLinha, novaColuna)]
 
         if (
           novaLinha < 1 ||
@@ -285,22 +208,22 @@ class Peca {
           break;
         }
 
-        const { continuar, movimento } = this.verificaCampo(
-          novaLinha,
-          novaColuna,
-          color
-        );
-        if (!continuar, movimento) {
-          if (pecaInimiga(peca)){
+        const { continuar, movimento } = this.verificaCampo([novaLinha, novaColuna], color, tabuleiro);
+        if (movimento) {
+          if (pecaInimiga(peca)) {
             return true;
           }
+
+        }
+
+        if (!continuar) {
           break;
         }
       }
     }
   }
-  static verificaXeque(tabuleiro, color){
-    const [linha,coluna] = encontraRei(tabuleiro, color);
+  static verificaXeque(tabuleiro, color) {
+    const rei = encontraRei(tabuleiro, color);
     const direcoes = {
       linha: [
         { linha: 0, coluna: 1 }, // direita
@@ -328,28 +251,30 @@ class Peca {
       ]
     };
 
-    if (peao([linha,coluna], color)){
+    if (peao(rei, color, tabuleiro)) {
       return true
     }
-    else if (this.verificaDirecao(direcoes.linha, [linha,coluna], color, (peca)=> rainha(peca)||torre(peca))){
+    else if (this.verificaDirecao(direcoes.linha, rei, color, (peca) => rainha(peca) || torre(peca), tabuleiro)) {
       return true;
     }
-    else if (this.verificaDirecao(direcoes.diagonal, [linha,coluna], color, (peca)=> rainha(peca) || bispo(peca))){
+    else if (this.verificaDirecao(direcoes.diagonal, rei, color, (peca) => rainha(peca) || bispo(peca), tabuleiro)) {
       return true
     }
-    else if (this.verificaDirecao(direcoes.cavalo, [linha,coluna], color, (peca) => cavalo(peca))){
+    else if (this.verificaDirecao(direcoes.cavalo, rei, color, (peca) => cavalo(peca), tabuleiro)) {
       return true;
     }
 
     return false;
   }
 
-  static verificaCampoVazio(linha, coluna) {
+  static verificaCampoVazio(posicao, tabuleiro) {
+    const [linha, coluna] = posicao
     const peca = tabuleiro[calcIndex(linha, coluna)];
     return peca === '';
   }
 
-  static verificaPecaCapturavel(linha, coluna, color) {
+  static verificaPecaCapturavel(posicao, color, tabuleiro) {
+    const [linha, coluna] = posicao;
     const peca = tabuleiro[calcIndex(linha, coluna)];
     const isPecaBranca = pecaBranca(peca);
     const isPecaPreta = pecaPreta(peca);
@@ -359,80 +284,25 @@ class Peca {
     );
   }
 
-  static verificaCampo(linha, coluna, color) {
-    const isCampoVazio = this.verificaCampoVazio(linha, coluna);
-    const isPecaCapturavel = this.verificaPecaCapturavel(linha, coluna, color);
+  static verificaCampo(posicao, color, tabuleiro) {
+    const isCampoVazio = this.verificaCampoVazio(posicao, tabuleiro);
+    const isPecaCapturavel = this.verificaPecaCapturavel(posicao, color, tabuleiro);
 
-    const movimento = isCampoVazio || isPecaCapturavel ? [linha, coluna] : null;
+    const movimento = isCampoVazio || isPecaCapturavel ? posicao : null;
     const continuar = isCampoVazio;
 
     return { movimento, continuar };
   }
 
-  static movimento(posicao) {
-    const [linhaAtual, colunaAtual] = pecaSelecionada.posicao;
-    const [linha, coluna] = posicao;
-    const peca = tabuleiro[calcIndex(linhaAtual, colunaAtual)];
-
-    tabuleiro[calcIndex(linhaAtual, colunaAtual)] = '';
-    tabuleiro[calcIndex(linha, coluna)] = peca;
-  }
-}
-
-class Peao extends Peca {
-  static possiveisMovimentos(posicao) {
+  static possiveisMovimentosLineares(posicao, tabuleiro, direcoes, passos = 8) {
     const [linha, coluna] = posicao;
     const movimentos = [];
     const color = pecaBranca(tabuleiro[calcIndex(linha, coluna)])
       ? 'branco'
       : 'preto';
-    const direcao = color === 'branco' ? 1 : -1;
-    const linhaInicial = color === 'branco' ? 2 : 7;
-
-    if (linha === linhaInicial) {
-      for (let i = 1; i <= 2; i++) {
-        if (this.verificaCampoVazio(linha + i * direcao, coluna)) {
-          movimentos.push([linha + i * direcao, coluna]);
-        } else {
-          break;
-        }
-      }
-    } else {
-      if (this.verificaCampoVazio(linha + 1 * direcao, coluna)) {
-        movimentos.push([linha + 1 * direcao, coluna]);
-      }
-    }
-
-    if (coluna - 1 > 0) {
-      if (this.verificaPecaCapturavel(linha + 1 * direcao, coluna - 1, color))
-        movimentos.push([linha + 1 * direcao, coluna - 1]);
-    }
-    if (coluna + 1 <= 8) {
-      if (this.verificaPecaCapturavel(linha + 1 * direcao, coluna + 1, color))
-        movimentos.push([linha + 1 * direcao, coluna + 1]);
-    }
-
-    return movimentos;
-  }
-}
-
-class Torre extends Peca {
-  static possiveisMovimentos(posicao) {
-    const [linha, coluna] = posicao;
-    const movimentos = [];
-    const color = pecaBranca(tabuleiro[calcIndex(linha, coluna)])
-      ? 'branco'
-      : 'preto';
-
-    const direcoes = [
-      { linha: 0, coluna: 1 }, // direita
-      { linha: 0, coluna: -1 }, // esquerda
-      { linha: 1, coluna: 0 }, // para cima
-      { linha: -1, coluna: 0 } // para baixo
-    ];
 
     for (const direcao of direcoes) {
-      for (let i = 1; i <= 8; i++) {
+      for (let i = 1; i <= passos; i++) {
         const novaLinha = linha + direcao.linha * i;
         const novaColuna = coluna + direcao.coluna * i;
 
@@ -445,14 +315,14 @@ class Torre extends Peca {
           break;
         }
 
-        const { continuar, movimento } = this.verificaCampo(
-          novaLinha,
-          novaColuna,
-          color
-        );
+        const { continuar, movimento } = this.verificaCampo([novaLinha, novaColuna], color, tabuleiro);
 
         if (movimento) {
-          movimentos.push(movimento);
+          const tabuleiroTeste = [...tabuleiro];
+          this.movimento(posicao, movimento, tabuleiroTeste);
+          if (!this.verificaXeque(tabuleiroTeste, color)) {
+            movimentos.push(movimento);
+          }
         }
 
         if (!continuar) {
@@ -463,16 +333,91 @@ class Torre extends Peca {
 
     return movimentos;
   }
+
+  static movimento(posicaoAtual, posicaoNova, tabuleiro) {
+    const [linhaAtual, colunaAtual] = posicaoAtual;
+    const [linha, coluna] = posicaoNova;
+    const peca = tabuleiro[calcIndex(linhaAtual, colunaAtual)];
+
+    tabuleiro[calcIndex(linhaAtual, colunaAtual)] = '';
+    tabuleiro[calcIndex(linha, coluna)] = peca;
+  }
 }
 
-class Cavalo extends Peca {
-  static possiveisMovimentos(posicao) {
+class Peao extends Peca {
+  static possiveisMovimentos(posicao, tabuleiro) {
     const [linha, coluna] = posicao;
     const movimentos = [];
     const color = pecaBranca(tabuleiro[calcIndex(linha, coluna)])
       ? 'branco'
       : 'preto';
+    const direcao = color === 'branco' ? 1 : -1;
+    const linhaInicial = color === 'branco' ? 2 : 7;
 
+    if (linha === linhaInicial) {
+      for (let i = 1; i <= 2; i++) {
+        if (this.verificaCampoVazio([linha + i * direcao, coluna], tabuleiro)) {
+          const posicaoNova = [linha + i * direcao, coluna];
+          const tabuleiroTeste = [...tabuleiro];
+          this.movimento(posicao, posicaoNova, tabuleiroTeste)
+          if (!this.verificaXeque(tabuleiroTeste, color)) {
+            movimentos.push(posicaoNova);
+          }
+        } else {
+          break;
+        }
+      }
+    } else {
+      if (this.verificaCampoVazio([linha + 1 * direcao, coluna], tabuleiro)) {
+        let posicaoNova = [linha + 1 * direcao, coluna];
+        let tabuleiroTeste = [...tabuleiro];
+        this.movimento(posicao, posicaoNova, tabuleiroTeste)
+        if (!this.verificaXeque(tabuleiroTeste, color)) {
+          movimentos.push(posicaoNova);
+        }
+      }
+    }
+
+    if (coluna - 1 > 0) {
+      if (this.verificaPecaCapturavel([linha + 1 * direcao, coluna - 1], color, tabuleiro)) {
+        const posicaoNova = [linha + 1 * direcao, coluna - 1];
+        const tabuleiroTeste = [...tabuleiro];
+        this.movimento(posicao, posicaoNova, tabuleiroTeste)
+        if (!this.verificaXeque(tabuleiroTeste, color)) {
+          movimentos.push(posicaoNova);
+        }
+      }
+    }
+    if (coluna + 1 <= 8) {
+      if (this.verificaPecaCapturavel([linha + 1 * direcao, coluna + 1], color, tabuleiro)) {
+        const posicaoNova = [linha + 1 * direcao, coluna + 1];
+        const tabuleiroTeste = [...tabuleiro];
+        this.movimento(posicao, posicaoNova, tabuleiroTeste)
+        if (!this.verificaXeque(tabuleiroTeste, color)) {
+          movimentos.push(posicaoNova);
+        }
+      }
+    }
+
+    return movimentos;
+  }
+}
+
+class Torre extends Peca {
+  static possiveisMovimentos(posicao, tabuleiro) {
+    const direcoes = [
+      { linha: 0, coluna: 1 }, // direita
+      { linha: 0, coluna: -1 }, // esquerda
+      { linha: 1, coluna: 0 }, // para cima
+      { linha: -1, coluna: 0 } // para baixo
+    ];
+
+    return this.possiveisMovimentosLineares(posicao, tabuleiro, direcoes)
+  }
+}
+
+class Cavalo extends Peca {
+  static possiveisMovimentos(posicao, tabuleiro) {
     const direcoes = [
       { linha: 2, coluna: 1 },
       { linha: 2, coluna: -1 },
@@ -484,36 +429,12 @@ class Cavalo extends Peca {
       { linha: -1, coluna: -2 }
     ];
 
-    for (const direcao of direcoes) {
-      const novaLinha = linha + direcao.linha;
-      const novaColuna = coluna + direcao.coluna;
-
-      if (
-        novaLinha >= 1 &&
-        novaLinha <= 8 &&
-        novaColuna >= 1 &&
-        novaColuna <= 8
-      ) {
-        const { movimento } = this.verificaCampo(novaLinha, novaColuna, color);
-
-        if (movimento) {
-          movimentos.push(movimento);
-        }
-      }
-    }
-
-    return movimentos;
+    return this.possiveisMovimentosLineares(posicao, tabuleiro, direcoes, 1)
   }
 }
 
 class Bispo extends Peca {
-  static possiveisMovimentos(posicao) {
-    const [linha, coluna] = posicao;
-    const movimentos = [];
-    const color = pecaBranca(tabuleiro[calcIndex(linha, coluna)])
-      ? 'branco'
-      : 'preto';
-
+  static possiveisMovimentos(posicao, tabuleiro) {
     const direcoes = [
       { linha: 1, coluna: 1 }, // diagonal superior direita
       { linha: 1, coluna: -1 }, // diagonal superior esquerda
@@ -521,48 +442,12 @@ class Bispo extends Peca {
       { linha: -1, coluna: -1 } // diagonal inferior esquerda
     ];
 
-    for (const direcao of direcoes) {
-      for (let i = 1; i <= 8; i++) {
-        const novaLinha = linha + direcao.linha * i;
-        const novaColuna = coluna + direcao.coluna * i;
-
-        if (
-          novaLinha < 1 ||
-          novaLinha > 8 ||
-          novaColuna < 1 ||
-          novaColuna > 8
-        ) {
-          break;
-        }
-
-        const { continuar, movimento } = this.verificaCampo(
-          novaLinha,
-          novaColuna,
-          color
-        );
-
-        if (movimento) {
-          movimentos.push(movimento);
-        }
-
-        if (!continuar) {
-          break;
-        }
-      }
-    }
-
-    return movimentos;
+    return this.possiveisMovimentosLineares(posicao, tabuleiro, direcoes)
   }
 }
 
 class Rainha extends Peca {
-  static possiveisMovimentos(posicao) {
-    const [linha, coluna] = posicao;
-    const movimentos = [];
-    const color = pecaBranca(tabuleiro[calcIndex(linha, coluna)])
-      ? 'branco'
-      : 'preto';
-
+  static possiveisMovimentos(posicao, tabuleiro) {
     const direcoes = [
       { linha: 0, coluna: 1 }, // direita
       { linha: 0, coluna: -1 }, // esquerda
@@ -574,48 +459,12 @@ class Rainha extends Peca {
       { linha: -1, coluna: -1 } // diagonal inferior esquerda
     ];
 
-    for (const direcao of direcoes) {
-      for (let i = 1; i <= 8; i++) {
-        const novaLinha = linha + direcao.linha * i;
-        const novaColuna = coluna + direcao.coluna * i;
-
-        if (
-          novaLinha < 1 ||
-          novaLinha > 8 ||
-          novaColuna < 1 ||
-          novaColuna > 8
-        ) {
-          break;
-        }
-
-        const { continuar, movimento } = this.verificaCampo(
-          novaLinha,
-          novaColuna,
-          color
-        );
-
-        if (movimento) {
-          movimentos.push(movimento);
-        }
-
-        if (!continuar) {
-          break;
-        }
-      }
-    }
-
-    return movimentos;
+    return this.possiveisMovimentosLineares(posicao, tabuleiro, direcoes)
   }
 }
 
 class Rei extends Peca {
-  static possiveisMovimentos(posicao) {
-    const [linha, coluna] = posicao;
-    const movimentos = [];
-    const color = pecaBranca(tabuleiro[calcIndex(linha, coluna)])
-      ? 'branco'
-      : 'preto';
-
+  static possiveisMovimentos(posicao, tabuleiro, jogador) {
     const direcoes = [
       { linha: 0, coluna: 1 }, // direita
       { linha: 0, coluna: -1 }, // esquerda
@@ -627,29 +476,39 @@ class Rei extends Peca {
       { linha: -1, coluna: -1 } // diagonal inferior esquerda
     ];
 
-    for (const direcao of direcoes) {
-      const novaLinha = linha + direcao.linha;
-      const novaColuna = coluna + direcao.coluna;
+    let movimentos = this.possiveisMovimentosLineares(posicao, tabuleiro, direcoes, 1);
+    const color = pecaBranca(tabuleiro[calcIndex(posicao[0], posicao[1])]) ? 'branco' : 'preto'
 
-      if (
-        novaLinha > 0 &&
-        novaLinha <= 8 &&
-        novaColuna > 0 &&
-        novaColuna <= 8
-      ) {
-        const { movimento } = this.verificaCampo(novaLinha, novaColuna, color);
-
-        if (movimento) {
-          movimentos.push(movimento);
-        }
+    if (!this.verificaXeque(tabuleiro, color)) {
+      if (jogador.roqueCurto && this.verificaRoque(posicao, tabuleiro, 'curto')) {
+        movimentos.push([posicao[0], posicao[1] + 2]);
       }
+      if (jogador.roqueGrande && this.verificaRoque(posicao, tabuleiro, 'grande')) {
+        movimentos.push([posicao[0], posicao[1] - 2]);
+      }
+
     }
 
     return movimentos;
   }
+
+  static verificaRoque(posicao, tabuleiro, tipo) {
+    const [linha, coluna] = posicao;
+    const direcao = tipo === 'curto' ? 1 : -1;
+    const casas = tipo === 'curto' ? 2 : 3;
+
+    for (let i = 1; i <= casas; i++) {
+      const novaColuna = coluna + direcao * i;
+      if (!this.verificaCampoVazio([linha, novaColuna], tabuleiro)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
 }
 
-function checarMovimento(posicao) {
+function checarMovimento(posicao, pecaSelecionada) {
   for (let i = 0; i < pecaSelecionada.possiveisMovimentos.length; i++) {
     if (
       pecaSelecionada.possiveisMovimentos[i].toString() === posicao.toString()
@@ -661,45 +520,97 @@ function checarMovimento(posicao) {
   return false;
 }
 
-function limparPeca() {
-  pecaSelecionada.movimentar = posicao => {};
-  pecaSelecionada.posicao = [];
-  pecaSelecionada.possiveisMovimentos = [];
+const pecas = {
+  '♙': Peao,
+  '♟': Peao,
+  '♜': Torre,
+  '♖': Torre,
+  '♞': Cavalo,
+  '♘': Cavalo,
+  '♝': Bispo,
+  '♗': Bispo,
+  '♛': Rainha,
+  '♕': Rainha,
+  '♚': Rei,
+  '♔': Rei,
+};
+
+function verificarPeca(posicao, tabuleiro, jogador) {
+  const peca = tabuleiro[calcIndex(posicao[0], posicao[1])];
+  let pecaSelecionada = {
+    possiveisMovimentos: [],
+    posicao: [],
+    movimentar: (posicao, tabuleiro) => { }
+  };
+
+  if (peca in pecas) {
+    pecaSelecionada = {
+      possiveisMovimentos: pecas[peca].possiveisMovimentos(posicao, tabuleiro, jogador),
+      posicao: posicao,
+      movimentar: pecas[peca].movimento,
+    };
+  }
+
+  return pecaSelecionada;
 }
 
 io.on('connection', socket => {
-  reset();
+  jogadoresAguardando.push(socket.id);
 
+  if (jogadoresAguardando.length >= 2) {
+    const index = jogos.push(new Jogo(jogadoresAguardando[0], jogadoresAguardando[1])) - 1;
+
+    io.to(jogadoresAguardando[0]).emit('inicio', jogos[index]);
+    io.to(jogadoresAguardando[1]).emit('inicio', jogos[index]);
+
+    jogadoresAguardando.shift();
+    jogadoresAguardando.shift();
+
+  }
   socket.on('movimento', posicao => {
-    if (Peca.verificaXeque(tabuleiro, 'preto')){
-      console.log('xeque preto')
-    }
-    if (Peca.verificaXeque(tabuleiro, 'branco')){
-      console.log('xeque branco')
+    const [jogo] = jogos.filter(jogo => jogo.jogadorDeBrancas.id === socket.id || jogo.jogadorDePretas.id === socket.id);
+    const jogador = jogo.turno === 'branco' ? jogo.jogadorDeBrancas : jogo.jogadorDePretas;
+    const pecaCerta = jogo.turno === 'branco' ? pecaBranca : pecaPreta;
+    const peca = jogo.tabuleiro[calcIndex(posicao[0], posicao[1])];
 
+    if (Peca.verificaXequeMate(jogo.tabuleiro, jogo.turno, jogador)) {
+      console.log(xequeMate)
     }
-    if (pecaSelecionada.possiveisMovimentos.length === 0) {
-      const movimentos = verificarPeca(posicao);
+    if (jogador.id !== socket.id) {
+      socket.emit('possiveis-movimentos', { movimentos: [], tabuleiro: jogo.tabuleiro, posicao });
+    }
+    else if (jogo.pecaSelecionada.possiveisMovimentos.length === 0) {
+      let movimentos = []
+      if (pecaCerta(peca)) {
+        jogo.pecaSelecionada = verificarPeca(posicao, jogo.tabuleiro, jogador);
 
-      socket.emit('possiveis-movimentos', { movimentos, tabuleiro, posicao });
+        movimentos = jogo.pecaSelecionada.possiveisMovimentos;
+      }
+
+      socket.emit('possiveis-movimentos', { movimentos, tabuleiro: jogo.tabuleiro, posicao });
     } else {
-      if (checarMovimento(posicao)) {
-        pecaSelecionada.movimentar(posicao);
+      if (checarMovimento(posicao, jogo.pecaSelecionada)) {
+        jogo.movimentarPeca(jogo.pecaSelecionada.posicao, posicao, jogo.tabuleiro);
 
-        limparPeca();
+        jogo.pecaSelecionada = new PecaSelecionada();
 
-        socket.emit('movimentou', tabuleiro);
+        io.to(jogo.jogadorDeBrancas.id).emit('movimentou', jogo);
+        io.to(jogo.jogadorDePretas.id).emit('movimentou', jogo);
       } else {
-        limparPeca();
+        jogo.pecaSelecionada = new PecaSelecionada();
 
-        const movimentos = verificarPeca(posicao);
+        let movimentos = []
+        if (pecaCerta(peca)) {
+          jogo.pecaSelecionada = verificarPeca(posicao, jogo.tabuleiro, jogador);
 
-        socket.emit('possiveis-movimentos', { movimentos, tabuleiro, posicao });
+          movimentos = jogo.pecaSelecionada.possiveisMovimentos;
+        }
+
+
+        socket.emit('possiveis-movimentos', { movimentos, tabuleiro: jogo.tabuleiro, posicao });
       }
     }
   });
-
-  socket.emit('inicio', tabuleiro);
 });
 
 app

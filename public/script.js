@@ -45,7 +45,6 @@ function marcarCasasDePossiveisMovimentos(posicao, movimentos) {
     movimentos.forEach(movimento => {
       const id = movimento.toString().replace(',', '-');
 
-      console.log(id)
       document.getElementById(id).classList.add('possivel-movimento');
     });
 
@@ -59,9 +58,25 @@ function selecionaCasa() {
   socket.emit('movimento', posicao);
 }
 
-socket.on('inicio', tabuleiro => {
+socket.on('inicio', jogo => {
+  if (jogo.jogadorDeBrancas.id === socket.id) {
+    if (jogo.turno === 'branco') {
+      document.querySelector('#vez').innerHTML = 'SUA VEZ'
+    }
+    else {
+      document.querySelector('#vez').innerHTML = 'VEZ DO ADVERSÁRIO'
+    }
+  }
+  else {
+    if (jogo.turno === 'preto') {
+      document.querySelector('#vez').innerHTML = 'SUA VEZ'
+    }
+    else {
+      document.querySelector('#vez').innerHTML = 'VEZ DO ADVERSÁRIO'
+    }
+  }
   gerarTabuleiro();
-  colocarPecasNoTabuleiro(tabuleiro);
+  colocarPecasNoTabuleiro(jogo.tabuleiro);
 });
 
 socket.on('possiveis-movimentos', ({ movimentos, tabuleiro, posicao }) => {
@@ -70,7 +85,23 @@ socket.on('possiveis-movimentos', ({ movimentos, tabuleiro, posicao }) => {
   marcarCasasDePossiveisMovimentos(posicao, movimentos);
 });
 
-socket.on('movimentou', tabuleiro => {
+socket.on('movimentou', jogo => {
+  if (jogo.jogadorDeBrancas.id === socket.id) {
+    if (jogo.turno === 'branco') {
+      document.querySelector('#vez').innerHTML = 'SUA VEZ'
+    }
+    else {
+      document.querySelector('#vez').innerHTML = 'VEZ DO ADVERSÁRIO'
+    }
+  }
+  else {
+    if (jogo.turno === 'preto') {
+      document.querySelector('#vez').innerHTML = 'SUA VEZ'
+    }
+    else {
+      document.querySelector('#vez').innerHTML = 'VEZ DO ADVERSÁRIO'
+    }
+  }
   gerarTabuleiro();
-  colocarPecasNoTabuleiro(tabuleiro);
+  colocarPecasNoTabuleiro(jogo.tabuleiro);
 });
