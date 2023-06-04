@@ -97,6 +97,7 @@ socket.on('inicio', jogo => {
       document.querySelector('#vez').innerHTML = 'VEZ DO ADVERSÁRIO'
     }
   }
+  document.querySelector('.full-screen').classList.add('closed')
   gerarTabuleiro();
   colocarPecasNoTabuleiro(jogo.tabuleiro);
 });
