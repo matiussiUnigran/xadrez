@@ -1,40 +1,62 @@
 const socket = io();
 
+const pecas = {
+  '♙': `<iconify-icon icon="fa6-solid:chess-pawn" style="color: white"></iconify-icon>`,
+  '♟': `<iconify-icon icon="fa6-solid:chess-pawn"></iconify-icon>`,
+  '♜': `<iconify-icon icon="fa6-solid:chess-rook"></iconify-icon>`,
+  '♖': `<iconify-icon icon="fa6-solid:chess-rook" style="color: white"></iconify-icon>`,
+  '♞': `<iconify-icon icon="fa6-solid:chess-knight"></iconify-icon>`,
+  '♘': `<iconify-icon icon="fa6-solid:chess-knight" style="color: white"></iconify-icon>`,
+  '♝': `<iconify-icon icon="fa6-solid:chess-bishop"></iconify-icon>`,
+  '♗': `<iconify-icon icon="fa6-solid:chess-bishop" style="color: white"></iconify-icon>`,
+  '♛': `<iconify-icon icon="fa6-solid:chess-queen"></iconify-icon>`,
+  '♕': `<iconify-icon icon="fa6-solid:chess-queen" style="color: white"></iconify-icon>`,
+  '♚': `<iconify-icon icon="fa6-solid:chess-king"></iconify-icon>`,
+  '♔': `<iconify-icon icon="fa6-solid:chess-king" style="color: white"></iconify-icon>`,
+  '':''
+};
+
 function gerarTabuleiro() {
   const tabuleiro = document.querySelector('.chessboard');
   tabuleiro.innerHTML = '';
-  const casas = 64;
+  const linhas = 8;
+  const colunas = 8;
   const tamanhoQuadrado = 50;
 
-  for (let i = 0; i < casas; i++) {
-    const quadrado = document.createElement('div');
+  for (let i = 0; i < linhas; i++) {
+    const linhaDiv = document.createElement('div');
+    linhaDiv.classList.add('linha')
 
-    const linha = Math.floor(i / 8);
-    const coluna = i % 8;
+    for (let j = 0; j < colunas; j++) {
+      const quadrado = document.createElement('div');
+      quadrado.classList.add('coluna')
 
-    const cor = (linha + coluna) % 2 === 0 ? 'white' : 'black';
-    quadrado.classList.add(cor);
+      const cor = (i + j) % 2 === 0 ? 'white' : 'black';
+      quadrado.classList.add(cor);
 
-    quadrado.style.width = tamanhoQuadrado + 'px';
-    quadrado.style.height = tamanhoQuadrado + 'px';
-    quadrado.id = `${8 - linha}-${coluna + 1}`;
+      quadrado.id = `${8 - i}-${j + 1}`;
 
-    quadrado.addEventListener('click', selecionaCasa);
+      quadrado.addEventListener('click', selecionaCasa);
 
-    tabuleiro.appendChild(quadrado);
+      linhaDiv.appendChild(quadrado);
+    }
+
+    tabuleiro.appendChild(linhaDiv);
   }
 
   document.body.appendChild(tabuleiro);
 }
 
-function colocarPecasNoTabuleiro(pecas) {
-  const tabuleiro = document.getElementsByClassName('chessboard')[0];
-  const quadrados = tabuleiro.getElementsByTagName('div');
+function colocarPecasNoTabuleiro(tabuleiro) {
+  const quadrados = document.querySelectorAll('.chessboard div div');
 
   for (let i = 0; i < quadrados.length; i++) {
-    quadrados[i].innerHTML = pecas[i];
+    if (quadrados[i].innerHTML !== pecas[tabuleiro[i]]){
+      quadrados[i].innerHTML = pecas[tabuleiro[i]];
+    }
   }
 }
+
 
 function marcarCasasDePossiveisMovimentos(posicao, movimentos) {
   if (movimentos.length === 0) {
@@ -79,9 +101,17 @@ socket.on('inicio', jogo => {
   colocarPecasNoTabuleiro(jogo.tabuleiro);
 });
 
+function limpaClasses(){
+  const colunas = document.querySelectorAll('.coluna');
+
+  colunas.forEach(coluna => {
+    coluna.classList.remove('possivel-movimento','selecionado','nenhum-movimento')
+  })
+}
+
 socket.on('possiveis-movimentos', ({ movimentos, tabuleiro, posicao }) => {
-  gerarTabuleiro();
   colocarPecasNoTabuleiro(tabuleiro);
+  limpaClasses()
   marcarCasasDePossiveisMovimentos(posicao, movimentos);
 });
 
@@ -102,6 +132,12 @@ socket.on('movimentou', jogo => {
       document.querySelector('#vez').innerHTML = 'VEZ DO ADVERSÁRIO'
     }
   }
-  gerarTabuleiro();
+  limpaClasses()
   colocarPecasNoTabuleiro(jogo.tabuleiro);
 });
+
+socket.on('xequeMate', turno => {
+  swal(`Xeque Mate Jogador de ${turno==='branco' ? 'Pretas' : 'Brancas'} venceu`).then(()=>{
+    location.reload();
+  })
+})

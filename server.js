@@ -63,7 +63,7 @@ class Jogo {
     this.tabuleiro[calcIndex(posicaoNova[0], posicaoNova[1])] = peca;
 
     // Se o movimento é um roque, mover a torre também
-    /*     if (Math.abs(posicaoAtual[1] - posicaoNova[1]) === 2) {
+        if (Math.abs(posicaoAtual[1] - posicaoNova[1]) === 2 && (peca === '♔' || peca === '♚')) {
           const direcao = posicaoNova[1] > posicaoAtual[1] ? 1 : -1;
           const colunaTorreOrigem = direcao === 1 ? 8 : 1;
           const colunaTorreDestino = posicaoAtual[1] + direcao;
@@ -71,7 +71,7 @@ class Jogo {
           const pecaTorre = this.tabuleiro[calcIndex(posicaoAtual[0], colunaTorreOrigem)];
           this.tabuleiro[calcIndex(posicaoAtual[0], colunaTorreOrigem)] = '';
           this.tabuleiro[calcIndex(posicaoAtual[0], colunaTorreDestino)] = pecaTorre;
-        } */
+        }
 
     // Trocar o turno
     this.turno = this.turno === 'branco' ? 'preto' : 'branco';
@@ -573,9 +573,6 @@ io.on('connection', socket => {
     const pecaCerta = jogo.turno === 'branco' ? pecaBranca : pecaPreta;
     const peca = jogo.tabuleiro[calcIndex(posicao[0], posicao[1])];
 
-    if (Peca.verificaXequeMate(jogo.tabuleiro, jogo.turno, jogador)) {
-      console.log(xequeMate)
-    }
     if (jogador.id !== socket.id) {
       socket.emit('possiveis-movimentos', { movimentos: [], tabuleiro: jogo.tabuleiro, posicao });
     }
@@ -596,6 +593,11 @@ io.on('connection', socket => {
 
         io.to(jogo.jogadorDeBrancas.id).emit('movimentou', jogo);
         io.to(jogo.jogadorDePretas.id).emit('movimentou', jogo);
+
+        if (Peca.verificaXequeMate(jogo.tabuleiro, jogo.turno, jogador)) {
+          io.to(jogo.jogadorDeBrancas.id).emit('xequeMate', jogo.turno);
+          io.to(jogo.jogadorDePretas.id).emit('xequeMate', jogo.turno);
+        }
       } else {
         jogo.pecaSelecionada = new PecaSelecionada();
 
