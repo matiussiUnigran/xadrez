@@ -6,10 +6,11 @@ const server = http.createServer(app);
 const { Server } = require('socket.io');
 const io = new Server(server);
 
-const jogadoresAguardando = [];
+let jogadoresAguardando = [];
 
 class Jogador {
-  constructor(id = '') {
+  constructor({ id, username }) {
+    this.username = username
     this.id = id;
     this.xeque = false;
     this.roqueCurto = true;
@@ -63,15 +64,15 @@ class Jogo {
     this.tabuleiro[calcIndex(posicaoNova[0], posicaoNova[1])] = peca;
 
     // Se o movimento é um roque, mover a torre também
-        if (Math.abs(posicaoAtual[1] - posicaoNova[1]) === 2 && (peca === '♔' || peca === '♚')) {
-          const direcao = posicaoNova[1] > posicaoAtual[1] ? 1 : -1;
-          const colunaTorreOrigem = direcao === 1 ? 8 : 1;
-          const colunaTorreDestino = posicaoAtual[1] + direcao;
-    
-          const pecaTorre = this.tabuleiro[calcIndex(posicaoAtual[0], colunaTorreOrigem)];
-          this.tabuleiro[calcIndex(posicaoAtual[0], colunaTorreOrigem)] = '';
-          this.tabuleiro[calcIndex(posicaoAtual[0], colunaTorreDestino)] = pecaTorre;
-        }
+    if (Math.abs(posicaoAtual[1] - posicaoNova[1]) === 2 && (peca === '♔' || peca === '♚')) {
+      const direcao = posicaoNova[1] > posicaoAtual[1] ? 1 : -1;
+      const colunaTorreOrigem = direcao === 1 ? 8 : 1;
+      const colunaTorreDestino = posicaoAtual[1] + direcao;
+
+      const pecaTorre = this.tabuleiro[calcIndex(posicaoAtual[0], colunaTorreOrigem)];
+      this.tabuleiro[calcIndex(posicaoAtual[0], colunaTorreOrigem)] = '';
+      this.tabuleiro[calcIndex(posicaoAtual[0], colunaTorreDestino)] = pecaTorre;
+    }
 
     // Trocar o turno
     this.turno = this.turno === 'branco' ? 'preto' : 'branco';
@@ -555,20 +556,30 @@ function verificarPeca(posicao, tabuleiro, jogador) {
 }
 
 io.on('connection', socket => {
-  jogadoresAguardando.push(socket.id);
 
-  if (jogadoresAguardando.length >= 2) {
-    const index = jogos.push(new Jogo(jogadoresAguardando[0], jogadoresAguardando[1])) - 1;
+  socket.on('entrou', (username) => {
+    jogadoresAguardando.push({ id: socket.id, username });
 
-    io.to(jogadoresAguardando[0]).emit('inicio', jogos[index]);
-    io.to(jogadoresAguardando[1]).emit('inicio', jogos[index]);
+    if (jogadoresAguardando.length >= 2) {
+      const index = jogos.push(new Jogo(jogadoresAguardando[0], jogadoresAguardando[1])) - 1;
 
-    jogadoresAguardando.shift();
-    jogadoresAguardando.shift();
+      io.to(jogadoresAguardando[0].id).emit('inicio', jogos[index]);
+      io.to(jogadoresAguardando[1].id).emit('inicio', jogos[index]);
 
-  }
+      jogadoresAguardando.shift();
+      jogadoresAguardando.shift();
+
+    }
+  })
+
   socket.on('movimento', posicao => {
-    const [jogo] = jogos.filter(jogo => jogo.jogadorDeBrancas.id === socket.id || jogo.jogadorDePretas.id === socket.id);
+    const jogosEncontrados = jogos.filter(jogo => jogo.jogadorDeBrancas.id === socket.id || jogo.jogadorDePretas.id === socket.id);
+
+    if (jogosEncontrados.length === 0) {
+      return null;
+    }
+
+    const [jogo] = jogosEncontrados;
     const jogador = jogo.turno === 'branco' ? jogo.jogadorDeBrancas : jogo.jogadorDePretas;
     const pecaCerta = jogo.turno === 'branco' ? pecaBranca : pecaPreta;
     const peca = jogo.tabuleiro[calcIndex(posicao[0], posicao[1])];
@@ -577,7 +588,8 @@ io.on('connection', socket => {
       socket.emit('possiveis-movimentos', { movimentos: [], tabuleiro: jogo.tabuleiro, posicao });
     }
     else if (jogo.pecaSelecionada.possiveisMovimentos.length === 0) {
-      let movimentos = []
+      let movimentos = [];
+
       if (pecaCerta(peca)) {
         jogo.pecaSelecionada = verificarPeca(posicao, jogo.tabuleiro, jogador);
 
@@ -613,6 +625,17 @@ io.on('connection', socket => {
       }
     }
   });
+
+  socket.on('disconnect', () => {
+    const jogosEncontrados = jogos.filter(jogo => jogo.jogadorDeBrancas.id === socket.id || jogo.jogadorDePretas.id === socket.id);
+
+    if (jogosEncontrados.length === 0) {
+      jogadoresAguardando = jogadoresAguardando.filter(jogador => jogador.id !== socket.id);
+    }
+    else {
+
+    }
+  })
 });
 
 app

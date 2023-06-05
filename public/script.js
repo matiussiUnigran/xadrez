@@ -13,10 +13,10 @@ const pecas = {
   '♕': `<iconify-icon icon="fa6-solid:chess-queen" style="color: white"></iconify-icon>`,
   '♚': `<iconify-icon icon="fa6-solid:chess-king"></iconify-icon>`,
   '♔': `<iconify-icon icon="fa6-solid:chess-king" style="color: white"></iconify-icon>`,
-  '':''
+  '': ''
 };
 
-function gerarTabuleiro() {
+function gerarTabuleiro(jogadorDePretas) {
   const tabuleiro = document.querySelector('.chessboard');
   tabuleiro.innerHTML = '';
   const linhas = 8;
@@ -29,12 +29,20 @@ function gerarTabuleiro() {
 
     for (let j = 0; j < colunas; j++) {
       const quadrado = document.createElement('div');
-      quadrado.classList.add('coluna')
+      quadrado.classList.add('coluna');
 
-      const cor = (i + j) % 2 === 0 ? 'white' : 'black';
-      quadrado.classList.add(cor);
+      if (jogadorDePretas) {
+        const cor = (i + j) % 2 === 0 ? 'black' : 'white';
+        quadrado.classList.add(cor);
 
-      quadrado.id = `${8 - i}-${j + 1}`;
+        quadrado.id = `${i + 1}-${8 - j}`;
+      }
+      else {
+        const cor = (i + j) % 2 === 0 ? 'white' : 'black';
+        quadrado.classList.add(cor);
+
+        quadrado.id = `${8 - i}-${j + 1}`;
+      }
 
       quadrado.addEventListener('click', selecionaCasa);
 
@@ -47,12 +55,21 @@ function gerarTabuleiro() {
   document.body.appendChild(tabuleiro);
 }
 
-function colocarPecasNoTabuleiro(tabuleiro) {
+function colocarPecasNoTabuleiro(tabuleiro, jogadorDePretas) {
   const quadrados = document.querySelectorAll('.chessboard div div');
 
-  for (let i = 0; i < quadrados.length; i++) {
-    if (quadrados[i].innerHTML !== pecas[tabuleiro[i]]){
-      quadrados[i].innerHTML = pecas[tabuleiro[i]];
+  if (jogadorDePretas) {
+    for (let i = 0; i < quadrados.length; i++) {
+      if (quadrados[i].innerHTML !== pecas[tabuleiro[quadrados.length - i - 1]]) {
+        quadrados[i].innerHTML = pecas[tabuleiro[quadrados.length - i - 1]];
+      }
+    }
+  }
+  else {
+    for (let i = 0; i < quadrados.length; i++) {
+      if (quadrados[i].innerHTML !== pecas[tabuleiro[i]]) {
+        quadrados[i].innerHTML = pecas[tabuleiro[i]];
+      }
     }
   }
 }
@@ -81,64 +98,94 @@ function selecionaCasa() {
 }
 
 socket.on('inicio', jogo => {
+  console.log(jogo)
   if (jogo.jogadorDeBrancas.id === socket.id) {
-    if (jogo.turno === 'branco') {
-      document.querySelector('#vez').innerHTML = 'SUA VEZ'
-    }
-    else {
-      document.querySelector('#vez').innerHTML = 'VEZ DO ADVERSÁRIO'
-    }
+    gerarTabuleiro();
+    colocarPecasNoTabuleiro(jogo.tabuleiro);
   }
   else {
-    if (jogo.turno === 'preto') {
-      document.querySelector('#vez').innerHTML = 'SUA VEZ'
-    }
-    else {
-      document.querySelector('#vez').innerHTML = 'VEZ DO ADVERSÁRIO'
-    }
+    gerarTabuleiro(true);
+    colocarPecasNoTabuleiro(jogo.tabuleiro, true);
   }
+
+  if (jogo.turno === 'branco') {
+    document.querySelector('#vez').innerHTML = 'Vez do ' + jogo.jogadorDeBrancas.username;
+  }
+  else {
+    document.querySelector('#vez').innerHTML = 'Vez do ' + jogo.jogadorDePretas.username;
+  }
+
   document.querySelector('.full-screen').classList.add('closed')
-  gerarTabuleiro();
-  colocarPecasNoTabuleiro(jogo.tabuleiro);
 });
 
-function limpaClasses(){
+function limpaClasses() {
   const colunas = document.querySelectorAll('.coluna');
 
   colunas.forEach(coluna => {
-    coluna.classList.remove('possivel-movimento','selecionado','nenhum-movimento')
+    coluna.classList.remove('possivel-movimento', 'selecionado', 'nenhum-movimento')
   })
 }
 
+function createLoading() {
+  const fullScreen = document.createElement('div');
+  fullScreen.classList.add('full-screen');
+
+  const spinner = document.createElement('div');
+  spinner.classList.add('spinner-border', 'text-primary');
+  spinner.role = 'status';
+
+  const span = document.createElement('span');
+  span.classList.add('sr-only');
+  span.innerText = 'Carregando ...';
+
+  spinner.appendChild(span);
+
+  fullScreen.appendChild(spinner);
+
+  const loadingText = document.createElement('div');
+  loadingText.classList.add('loading-text');
+  loadingText.innerHTML = 'Aguardando Adversário';
+
+  fullScreen.appendChild(loadingText);
+
+  return fullScreen;
+}
+
+document.querySelector('button').addEventListener('click', inseriNome)
+
+function inseriNome() {
+  const username = document.querySelector('input').value;
+
+  document.querySelector('.container').innerHTML = '';
+  document.querySelector('.container').appendChild(createLoading());
+
+  socket.emit('entrou', username)
+}
+
 socket.on('possiveis-movimentos', ({ movimentos, tabuleiro, posicao }) => {
-  colocarPecasNoTabuleiro(tabuleiro);
   limpaClasses()
   marcarCasasDePossiveisMovimentos(posicao, movimentos);
 });
 
 socket.on('movimentou', jogo => {
   if (jogo.jogadorDeBrancas.id === socket.id) {
-    if (jogo.turno === 'branco') {
-      document.querySelector('#vez').innerHTML = 'SUA VEZ'
-    }
-    else {
-      document.querySelector('#vez').innerHTML = 'VEZ DO ADVERSÁRIO'
-    }
+    colocarPecasNoTabuleiro(jogo.tabuleiro);
   }
   else {
-    if (jogo.turno === 'preto') {
-      document.querySelector('#vez').innerHTML = 'SUA VEZ'
-    }
-    else {
-      document.querySelector('#vez').innerHTML = 'VEZ DO ADVERSÁRIO'
-    }
+    colocarPecasNoTabuleiro(jogo.tabuleiro, true);
+  }
+
+  if (jogo.turno === 'branco') {
+    document.querySelector('#vez').innerHTML = 'Vez do ' + jogo.jogadorDeBrancas.username;
+  }
+  else {
+    document.querySelector('#vez').innerHTML = 'Vez do ' + jogo.jogadorDePretas.username;
   }
   limpaClasses()
-  colocarPecasNoTabuleiro(jogo.tabuleiro);
 });
 
 socket.on('xequeMate', turno => {
-  swal(`Xeque Mate Jogador de ${turno==='branco' ? 'Pretas' : 'Brancas'} venceu`).then(()=>{
+  swal(`Xeque Mate Jogador de ${turno === 'branco' ? 'Pretas' : 'Brancas'} venceu`).then(() => {
     location.reload();
   })
 })

@@ -7,18 +7,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <title>Document</title>
+    <title>Boraaaa</title>
 </head>
 
 <body>
 
-    <div class="full-screen">
-        <div class="spinner-border text-primary" role="status">
-          <span class="sr-only">Carregando...</span>
+    <div class="container">
+        <div class="row">
+            <div class="col-4 form-center">
+                <form>
+                    <div class="form-group">
+                        <label for="username">Nome de usuário</label>
+                        <input type="text" class="form-control" id="username" placeholder="Insira seu nome de usuário">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Enviar</button>
+                </form>
+            </div>
         </div>
-        <div class="loading-text">Aguardando adversário...</div>
     </div>
-    
+
     <h1 id="vez"></h1>
     <div class="chessboard">
     </div>
