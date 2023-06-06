@@ -1,3 +1,7 @@
+:root {
+    --tamanho-tabuleiro: 600px;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -51,13 +55,14 @@ body {
 
 .chessboard {
     margin-top: 50px;
-    width: 800px;
-    height: 800px;
+    width: var(--tamanho-tabuleiro);
+    height: var(--tamanho-tabuleiro);
     display: flex;
     flex-direction: column;
-    /* Para organizar as linhas na direção vertical */
     justify-content: center;
     align-items: center;
+    border: solid;
+    overflow: hidden;
 }
 
 .chessboard .linha {
@@ -66,12 +71,12 @@ body {
 }
 
 iconify-icon {
-    font-size: 50px;
+    font-size: calc(var(--tamanho-tabuleiro * 0.06333));
 }
 
 .chessboard .coluna {
     width: 12.5%;
-    height: calc(800px * 0.125);
+    height: calc(var(--tamanho-tabuleiro) * 0.125);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -84,23 +89,23 @@ iconify-icon {
 }
 
 .chessboard .white {
-    background-color: #f0d9b5;
+    background-color: #ffffff;
 }
 
 .chessboard .black {
-    background-color: #b58863;
+    background-color: rgb(202, 202, 202);
 }
 
 .chessboard .possivel-movimento {
-    border: 5px dotted turquoise;
+    border: 5px dotted rgb(49, 175, 163);
 }
 
 .chessboard .possivel-movimento:hover {
-    border: 5px dotted turquoise;
+    border: 5px dotted rgb(49, 175, 163);
 }
 
 .chessboard .selecionado {
-    border: 5px solid turquoise;
+    border: 5px solid rgb(49, 175, 163);
 }
 
 .chessboard .nenhum-movimento {
@@ -112,5 +117,5 @@ iconify-icon {
 }
 
 .chessboard .selecionado:hover {
-    border: 5px solid turquoise;
+    border: 5px solid rgb(49, 175, 163);
 }

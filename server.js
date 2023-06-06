@@ -8,6 +8,17 @@ const io = new Server(server);
 
 let jogadoresAguardando = [];
 
+[
+  ['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜'],
+  ['♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟'],
+  ['', '', '', '', '', '', '', ''],
+  ['', '', '', '', '', '', '', ''],
+  ['', '', '', '', '', '', '', ''],
+  ['', '', '', '', '', '', '', ''],
+  ['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
+  ['♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖']
+];
+
 class Jogador {
   constructor({ id, username }) {
     this.username = username
@@ -148,7 +159,7 @@ function encontraRei(tabuleiro, color) {
   return posicao;
 }
 
-function peao(posicao, color, tabuleiro) {
+function estaSobAtaqueDePeao(posicao, color, tabuleiro) {
   const [linha, coluna] = posicao;
   const direcao = color === 'branco' ? 1 : -1;
 
@@ -223,8 +234,8 @@ class Peca {
       }
     }
   }
-  static verificaXeque(tabuleiro, color) {
-    const rei = encontraRei(tabuleiro, color);
+
+  static estaSobAtaqueDeAlgumaPeca(posicao, tabuleiro, color) {
     const direcoes = {
       linha: [
         { linha: 0, coluna: 1 }, // direita
@@ -252,20 +263,26 @@ class Peca {
       ]
     };
 
-    if (peao(rei, color, tabuleiro)) {
+    if (estaSobAtaqueDePeao(posicao, color, tabuleiro)) {
       return true
     }
-    else if (this.verificaDirecao(direcoes.linha, rei, color, (peca) => rainha(peca) || torre(peca), tabuleiro)) {
+    else if (this.verificaDirecao(direcoes.linha, posicao, color, (peca) => rainha(peca) || torre(peca), tabuleiro)) {
       return true;
     }
-    else if (this.verificaDirecao(direcoes.diagonal, rei, color, (peca) => rainha(peca) || bispo(peca), tabuleiro)) {
+    else if (this.verificaDirecao(direcoes.diagonal, posicao, color, (peca) => rainha(peca) || bispo(peca), tabuleiro)) {
       return true
     }
-    else if (this.verificaDirecao(direcoes.cavalo, rei, color, (peca) => cavalo(peca), tabuleiro)) {
+    else if (this.verificaDirecao(direcoes.cavalo, posicao, color, (peca) => cavalo(peca), tabuleiro)) {
       return true;
     }
 
     return false;
+  }
+
+  static verificaXeque(tabuleiro, color) {
+    const rei = encontraRei(tabuleiro, color);
+
+    return this.estaSobAtaqueDeAlgumaPeca(rei, tabuleiro, color);
   }
 
   static verificaCampoVazio(posicao, tabuleiro) {
@@ -497,10 +514,11 @@ class Rei extends Peca {
     const [linha, coluna] = posicao;
     const direcao = tipo === 'curto' ? 1 : -1;
     const casas = tipo === 'curto' ? 2 : 3;
+    const color = linha === 1 ? 'branco' : 'preto';
 
     for (let i = 1; i <= casas; i++) {
       const novaColuna = coluna + direcao * i;
-      if (!this.verificaCampoVazio([linha, novaColuna], tabuleiro)) {
+      if (!this.verificaCampoVazio([linha, novaColuna], tabuleiro) || this.estaSobAtaqueDeAlgumaPeca([linha, novaColuna], tabuleiro, color)) {
         return false;
       }
     }
@@ -627,13 +645,23 @@ io.on('connection', socket => {
   });
 
   socket.on('disconnect', () => {
-    const jogosEncontrados = jogos.filter(jogo => jogo.jogadorDeBrancas.id === socket.id || jogo.jogadorDePretas.id === socket.id);
+    const jogosEncontrados = jogos.map((jogo, index) => {
+      if (jogo.jogadorDeBrancas.id === socket.id || jogo.jogadorDePretas.id === socket.id) {
+        return index;
+      }
+      else {
+        return -1;
+      }
+    }).filter(v => v !== -1);
 
     if (jogosEncontrados.length === 0) {
       jogadoresAguardando = jogadoresAguardando.filter(jogador => jogador.id !== socket.id);
     }
     else {
+      io.to(jogos[jogosEncontrados[0]].jogadorDeBrancas.id).emit('desconectou', jogos[jogosEncontrados[0]].jogadorDePretas.username);
+      io.to(jogos[jogosEncontrados[0]].jogadorDePretas.id).emit('desconectou', jogos[jogosEncontrados[0]].jogadorDeBrancas.username);
 
+      jogos.slice(jogosEncontrados[0], 1);
     }
   })
 });
@@ -644,4 +672,10 @@ app
   .get('/', (req, res) => {
     return res.sendFile('index.html', { root: __dirname });
   });
-server.listen(8000);
+
+app.use((req, res, next) => {
+  res.status(404).sendFile('404.html', { root: __dirname });
+});
+
+
+server.listen(8000, '0.0.0.0');

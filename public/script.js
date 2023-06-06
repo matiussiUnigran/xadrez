@@ -1,23 +1,24 @@
 const socket = io();
 
 const pecas = {
-  '♙': `<iconify-icon icon="fa6-solid:chess-pawn" style="color: white"></iconify-icon>`,
+  '♙': `<iconify-icon icon="fa6-regular:chess-pawn"></iconify-icon>`,
   '♟': `<iconify-icon icon="fa6-solid:chess-pawn"></iconify-icon>`,
   '♜': `<iconify-icon icon="fa6-solid:chess-rook"></iconify-icon>`,
-  '♖': `<iconify-icon icon="fa6-solid:chess-rook" style="color: white"></iconify-icon>`,
+  '♖': `<iconify-icon icon="fa6-regular:chess-rook"></iconify-icon>`,
   '♞': `<iconify-icon icon="fa6-solid:chess-knight"></iconify-icon>`,
-  '♘': `<iconify-icon icon="fa6-solid:chess-knight" style="color: white"></iconify-icon>`,
+  '♘': `<iconify-icon icon="fa6-regular:chess-knight"></iconify-icon>`,
   '♝': `<iconify-icon icon="fa6-solid:chess-bishop"></iconify-icon>`,
-  '♗': `<iconify-icon icon="fa6-solid:chess-bishop" style="color: white"></iconify-icon>`,
+  '♗': `<iconify-icon icon="fa6-regular:chess-bishop"></iconify-icon>`,
   '♛': `<iconify-icon icon="fa6-solid:chess-queen"></iconify-icon>`,
-  '♕': `<iconify-icon icon="fa6-solid:chess-queen" style="color: white"></iconify-icon>`,
+  '♕': `<iconify-icon icon="fa6-regular:chess-queen"></iconify-icon>`,
   '♚': `<iconify-icon icon="fa6-solid:chess-king"></iconify-icon>`,
-  '♔': `<iconify-icon icon="fa6-solid:chess-king" style="color: white"></iconify-icon>`,
+  '♔': `<iconify-icon icon="fa6-regular:chess-king"></iconify-icon>`,
   '': ''
 };
 
 function gerarTabuleiro(jogadorDePretas) {
-  const tabuleiro = document.querySelector('.chessboard');
+  const tabuleiro = document.createElement('div');
+  tabuleiro.classList.add('chessboard');
   tabuleiro.innerHTML = '';
   const linhas = 8;
   const colunas = 8;
@@ -30,15 +31,14 @@ function gerarTabuleiro(jogadorDePretas) {
     for (let j = 0; j < colunas; j++) {
       const quadrado = document.createElement('div');
       quadrado.classList.add('coluna');
+      const cor = (i + j) % 2 === 0 ? 'white' : 'black';
 
       if (jogadorDePretas) {
-        const cor = (i + j) % 2 === 0 ? 'black' : 'white';
         quadrado.classList.add(cor);
 
         quadrado.id = `${i + 1}-${8 - j}`;
       }
       else {
-        const cor = (i + j) % 2 === 0 ? 'white' : 'black';
         quadrado.classList.add(cor);
 
         quadrado.id = `${8 - i}-${j + 1}`;
@@ -186,6 +186,12 @@ socket.on('movimentou', jogo => {
 
 socket.on('xequeMate', turno => {
   swal(`Xeque Mate Jogador de ${turno === 'branco' ? 'Pretas' : 'Brancas'} venceu`).then(() => {
+    location.reload();
+  })
+});
+
+socket.on('desconectou', jogador => {
+  swal(`Jogador ${jogador} desconectou da partida`).then(() => {
     location.reload();
   })
 })
